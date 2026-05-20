@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { GearDimensionTable } from "./components/GearDimensionTable";
+import { GearTrainPreview } from "./components/GearTrainPreview";
 import { MotorInputPanel } from "./components/MotorInputPanel";
 import { ResultSummary } from "./components/ResultSummary";
 import { RiskWarnings } from "./components/RiskWarnings";
@@ -127,6 +128,7 @@ function App() {
         </div>
 
         <div className="mt-6 grid gap-6">
+          <GearTrainPreview stages={input.stages.slice(0, input.stageCount)} result={result} />
           <StageResultTable stages={result.stages} />
           <GearDimensionTable gears={result.gears} />
           <RiskWarnings risks={result.risks} />
