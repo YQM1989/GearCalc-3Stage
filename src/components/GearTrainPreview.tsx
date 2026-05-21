@@ -25,15 +25,16 @@ const getGearPath = (cx: number, cy: number, radius: number, teeth: number) => {
   const visualTeeth = Math.max(10, Math.min(36, Math.round(teeth)));
   const points = visualTeeth * 2;
   const rootRadius = radius * 0.88;
-  const toothRadius = radius;
 
-  return Array.from({ length: points + 1 }, (_, index) => {
-    const angle = -Math.PI / 2 + (index / points) * Math.PI * 2;
-    const pointRadius = index % 2 === 0 ? toothRadius : rootRadius;
-    const x = cx + Math.cos(angle) * pointRadius;
-    const y = cy + Math.sin(angle) * pointRadius;
-    return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-  }).join(" ") + " Z";
+  return (
+    Array.from({ length: points + 1 }, (_, index) => {
+      const angle = -Math.PI / 2 + (index / points) * Math.PI * 2;
+      const pointRadius = index % 2 === 0 ? radius : rootRadius;
+      const x = cx + Math.cos(angle) * pointRadius;
+      const y = cy + Math.sin(angle) * pointRadius;
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    }).join(" ") + " Z"
+  );
 };
 
 const getSpinDuration = (rpm: number) => {
@@ -76,8 +77,8 @@ const GearShape = ({
           x2={cx}
           y2={cy - radius * 0.22}
           stroke={stroke}
-          strokeWidth="3"
           strokeLinecap="round"
+          strokeWidth="3"
         />
       </g>
       <text
@@ -97,9 +98,9 @@ const GearShape = ({
 
 export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
   const activeStages = stages.slice(0, result.stages.length);
-  const width = 980;
-  const height = 300;
-  const stageWidth = width / Math.max(activeStages.length, 1);
+  const width = 1120;
+  const height = 270;
+  const stageWidth = 860 / Math.max(activeStages.length, 1);
   const maxPitchDiameter = Math.max(
     1,
     ...activeStages.flatMap((stage) => [stage.module * stage.driverTeeth, stage.module * stage.drivenTeeth]),
@@ -107,22 +108,23 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex items-end justify-between gap-3 border-b border-slate-200 px-3 py-2">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">传动视觉预览</h2>
-          <p className="mt-1 text-sm text-slate-500">按节圆直径近似缩放，动画速度反映各级输入/输出转速。</p>
+          <h2 className="text-sm font-semibold text-slate-950">传动视觉预览</h2>
+          <p className="mt-0.5 text-xs text-slate-500">按节圆直径近似缩放，动画速度反映各级转速。</p>
         </div>
-        <div className="text-sm font-semibold text-slate-600">
+        <div className="shrink-0 text-xs font-semibold text-slate-600">
           输出方向：<span className="text-teal-700">{result.outputDirection}</span>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-hidden">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           role="img"
           aria-label="齿轮传动视觉预览"
-          className="min-w-[760px] bg-slate-50"
+          preserveAspectRatio="xMidYMid meet"
+          className="block aspect-[1120/270] h-[248px] w-full bg-slate-50"
         >
           <defs>
             <marker id="arrow-head" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
@@ -130,41 +132,41 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
             </marker>
           </defs>
 
-          <rect x="22" y="34" width="86" height="72" rx="8" fill="#dbeafe" stroke="#2563eb" />
-          <rect x="38" y="48" width="54" height="44" rx="5" fill="#eff6ff" stroke="#2563eb" />
-          <text x="65" y="126" textAnchor="middle" className="fill-slate-700 text-[12px] font-semibold">
+          <rect x="24" y="48" width="86" height="72" rx="8" fill="#dbeafe" stroke="#2563eb" />
+          <rect x="40" y="62" width="54" height="44" rx="5" fill="#eff6ff" stroke="#2563eb" />
+          <text x="67" y="140" textAnchor="middle" className="fill-slate-700 text-[12px] font-semibold">
             电机
           </text>
-          <line x1="108" y1="70" x2="136" y2="70" stroke="#475569" strokeWidth="8" strokeLinecap="round" />
+          <line x1="110" y1="84" x2="140" y2="84" stroke="#475569" strokeLinecap="round" strokeWidth="8" />
 
           {activeStages.map((stage, index) => {
             const stageResult = result.stages[index];
-            const baseX = 155 + index * stageWidth;
+            const baseX = 158 + index * stageWidth;
             const driverDiameter = stage.module * stage.driverTeeth;
             const drivenDiameter = stage.module * stage.drivenTeeth;
-            const driverRadius = 18 + (driverDiameter / maxPitchDiameter) * 32;
-            const drivenRadius = 18 + (drivenDiameter / maxPitchDiameter) * 32;
+            const driverRadius = 17 + (driverDiameter / maxPitchDiameter) * 30;
+            const drivenRadius = 17 + (drivenDiameter / maxPitchDiameter) * 30;
             const driverCx = baseX + 42;
-            const driverCy = 94;
-            const drivenCx = driverCx + driverRadius + drivenRadius + 7;
+            const driverCy = 98;
+            const drivenCx = driverCx + driverRadius + drivenRadius + 8;
             const drivenCy = driverCy;
             const driverClockwise = index % 2 === 0;
             const drivenClockwise = !driverClockwise;
-            const nextStartX = 155 + (index + 1) * stageWidth + 42;
+            const nextStartX = 158 + (index + 1) * stageWidth + 42;
 
             return (
               <g key={index}>
-                <text x={baseX + 8} y="32" className="fill-slate-500 text-[12px] font-semibold">
-                  第 {index + 1} 级  i={formatNumber(stageResult.ratio, 2)}
+                <text x={baseX + 8} y="36" className="fill-slate-500 text-[12px] font-semibold">
+                  第 {index + 1} 级 i={formatNumber(stageResult.ratio, 2)}
                 </text>
                 <line
-                  x1={driverCx - driverRadius - 28}
+                  x1={driverCx - driverRadius - 26}
                   y1={driverCy}
                   x2={drivenCx + drivenRadius + 26}
                   y2={driverCy}
                   stroke="#94a3b8"
-                  strokeWidth="6"
                   strokeLinecap="round"
+                  strokeWidth="6"
                 />
                 <GearShape
                   cx={driverCx}
@@ -187,7 +189,7 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                   fill="#fde68a"
                   stroke="#b45309"
                   label={`${stage.drivenTeeth}齿 / m${stage.module}`}
-                  labelOffset={22}
+                  labelOffset={18}
                 />
                 <path
                   d={
@@ -200,9 +202,9 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                         }`
                   }
                   fill="none"
+                  markerEnd="url(#arrow-head)"
                   stroke="#0f766e"
                   strokeWidth="2"
-                  markerEnd="url(#arrow-head)"
                 />
                 {index < activeStages.length - 1 ? (
                   <line
@@ -211,21 +213,25 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                     x2={nextStartX - driverRadius - 26}
                     y2={driverCy}
                     stroke="#64748b"
-                    strokeWidth="3"
                     strokeDasharray="6 6"
+                    strokeWidth="3"
                   />
                 ) : null}
               </g>
             );
           })}
 
-          <g transform="translate(32 236)">
-            <rect x="0" y="0" width="916" height="38" rx="6" fill="#ffffff" stroke="#e2e8f0" />
-            <circle cx="22" cy="19" r="7" fill="#ccfbf1" stroke="#0f766e" />
-            <text x="38" y="23" className="fill-slate-600 text-[12px]">主动齿轮</text>
-            <circle cx="130" cy="19" r="7" fill="#fde68a" stroke="#b45309" />
-            <text x="146" y="23" className="fill-slate-600 text-[12px]">从动齿轮</text>
-            <text x="272" y="23" className="fill-slate-500 text-[12px]">
+          <g transform="translate(32 222)">
+            <rect x="0" y="0" width="1056" height="34" rx="6" fill="#ffffff" stroke="#e2e8f0" />
+            <circle cx="22" cy="17" r="7" fill="#ccfbf1" stroke="#0f766e" />
+            <text x="38" y="21" className="fill-slate-600 text-[12px]">
+              主动齿轮
+            </text>
+            <circle cx="128" cy="17" r="7" fill="#fde68a" stroke="#b45309" />
+            <text x="144" y="21" className="fill-slate-600 text-[12px]">
+              从动齿轮
+            </text>
+            <text x="268" y="21" className="fill-slate-500 text-[12px]">
               图形为工程示意，不替代强度、齿宽、轴承和箱体校核。
             </text>
           </g>

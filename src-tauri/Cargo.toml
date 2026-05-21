@@ -1,0 +1,17 @@
+[package]
+name = "gearcalc-3stage"
+version = "0.1.0"
+description = "A desktop wrapper for GearCalc-3Stage."
+authors = ["YQM"]
+edition = "2021"
+
+[lib]
+name = "gearcalc_3stage_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
