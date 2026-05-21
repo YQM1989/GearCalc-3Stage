@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { GearDimensionTable } from "./components/GearDimensionTable";
 import { GearTrainPreview } from "./components/GearTrainPreview";
-import { MotorInputPanel } from "./components/MotorInputPanel";
+import { InputMatrix } from "./components/InputMatrix";
 import { ResultSummary } from "./components/ResultSummary";
 import { RiskWarnings } from "./components/RiskWarnings";
-import { StageInputCard } from "./components/StageInputCard";
 import { StageResultTable } from "./components/StageResultTable";
 import { calculateGearReduction } from "./lib/gearCalculations";
 import type { GearCalcInput, StageCount, StageInput } from "./types/gear";
@@ -64,26 +63,26 @@ function App() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <main className="h-screen min-w-[1280px] overflow-hidden bg-slate-100">
+      <div className="mx-auto flex h-full max-w-[1600px] flex-col px-3 py-3">
+        <header className="mb-3 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 pb-3">
           <div>
-            <p className="text-sm font-semibold text-teal-700">GearCalc-3Stage</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-normal text-slate-950">
+            <p className="text-xs font-semibold text-teal-700">GearCalc-3Stage</p>
+            <h1 className="mt-0.5 text-2xl font-bold tracking-normal text-slate-950">
               三级齿轮减速参数计算器
             </h1>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               type="button"
-              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+              className="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
               onClick={() => setInput(cloneInput(exampleInput))}
             >
               载入示例
             </button>
             <button
               type="button"
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-950"
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-950"
               onClick={() => setInput(cloneInput(defaultInput))}
             >
               重置
@@ -91,14 +90,12 @@ function App() {
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="grid gap-5">
-            <MotorInputPanel
-              motorRpm={input.motorRpm}
-              motorTorque={input.motorTorque}
-              defaultEfficiency={input.defaultEfficiency}
-              pressureAngle={input.pressureAngle}
-              stageCount={input.stageCount}
+        <ResultSummary result={result} />
+
+        <div className="mt-3 grid min-h-0 flex-1 grid-cols-[430px_minmax(0,1fr)] gap-3">
+          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
+            <InputMatrix
+              input={input}
               onMotorRpmChange={(value) => setInput((current) => ({ ...current, motorRpm: value }))}
               onMotorTorqueChange={(value) =>
                 setInput((current) => ({ ...current, motorTorque: value }))
@@ -110,28 +107,24 @@ function App() {
               onStageCountChange={(value: StageCount) =>
                 setInput((current) => ({ ...current, stageCount: value }))
               }
+              onStageChange={updateStage}
             />
-
-            <div className="grid gap-5">
-              {input.stages.slice(0, input.stageCount).map((stage, index) => (
-                <StageInputCard
-                  key={index}
-                  stage={stage}
-                  index={index}
-                  onChange={(nextStage) => updateStage(index, nextStage)}
-                />
-              ))}
+            <div className="min-h-0 overflow-y-auto overscroll-contain pr-1">
+              <RiskWarnings risks={result.risks} />
             </div>
           </div>
 
-          <ResultSummary result={result} />
-        </div>
-
-        <div className="mt-6 grid gap-6">
-          <GearTrainPreview stages={input.stages.slice(0, input.stageCount)} result={result} />
-          <StageResultTable stages={result.stages} />
-          <GearDimensionTable gears={result.gears} />
-          <RiskWarnings risks={result.risks} />
+          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
+            <GearTrainPreview stages={input.stages.slice(0, input.stageCount)} result={result} />
+            <div className="grid min-h-0 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3">
+              <div className="min-h-0 overflow-auto overscroll-contain">
+                <StageResultTable stages={result.stages} />
+              </div>
+              <div className="min-h-0 overflow-auto overscroll-contain">
+                <GearDimensionTable gears={result.gears} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
