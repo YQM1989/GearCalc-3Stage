@@ -1,0 +1,91 @@
+Project GearCalc3Stage {
+  database_type: 'Conceptual Model'
+  Note: '三级齿轮减速参数计算器的数据结构预览图。当前项目不是数据库项目，这个 DBML 用来辅助理解输入、计算、结果、风险之间的关系。'
+}
+
+Table calculation_cases {
+  id integer [pk, increment]
+  name varchar [not null, note: '方案名称，例如：默认方案 / 载入示例 / 客户A电机方案']
+  stage_count integer [not null, note: '级数：1 / 2 / 3']
+  motor_rpm decimal [not null, note: '电机输入转速 rpm']
+  motor_torque decimal [not null, note: '电机输入扭矩 N·m']
+  default_efficiency decimal [not null, note: '默认单级效率，例如 95 表示 95%']
+  pressure_angle decimal [not null, note: '压力角，常见为 20°']
+  created_at datetime
+  updated_at datetime
+}
+
+Table stage_inputs {
+  id integer [pk, increment]
+  case_id integer [not null]
+  stage_index integer [not null, note: '第几级：1 / 2 / 3']
+  module decimal [not null, note: '模数 m']
+  driver_teeth integer [not null, note: '主动齿轮齿数']
+  driven_teeth integer [not null, note: '从动齿轮齿数']
+  efficiency decimal [not null, note: '本级效率，例如 95']
+  note varchar [note: '备注']
+
+  Indexes {
+    (case_id, stage_index) [unique]
+  }
+}
+
+Table calculation_results {
+  id integer [pk, increment]
+  case_id integer [not null, unique]
+  total_ratio decimal [not null, note: '总减速比']
+  output_rpm decimal [not null, note: '最终输出转速 rpm']
+  output_torque decimal [not null, note: '最终输出扭矩 N·m']
+  total_efficiency decimal [not null, note: '总效率，多个级数效率相乘']
+  output_direction varchar [not null, note: '与电机同向 / 与电机反向']
+  calculated_at datetime
+}
+
+Table stage_calculations {
+  id integer [pk, increment]
+  result_id integer [not null]
+  stage_input_id integer [not null]
+  stage_index integer [not null]
+  input_rpm decimal [not null]
+  output_rpm decimal [not null]
+  input_torque decimal [not null]
+  output_torque decimal [not null]
+  ratio decimal [not null, note: '本级减速比 = 从动齿数 / 主动齿数']
+  efficiency decimal [not null]
+  center_distance decimal [not null, note: '中心距 = 模数 × (主动齿数 + 从动齿数) / 2']
+  note varchar
+}
+
+Table gear_geometries {
+  id integer [pk, increment]
+  stage_input_id integer [not null]
+  stage_index integer [not null]
+  role varchar [not null, note: '主动齿轮 / 从动齿轮']
+  module decimal [not null]
+  teeth integer [not null]
+  pitch_diameter decimal [not null, note: '节圆直径 = 模数 × 齿数']
+  addendum_diameter decimal [not null, note: '齿顶圆直径 = 模数 × 齿数 + 2 × 模数']
+  root_diameter decimal [not null, note: '齿根圆直径 = 模数 × 齿数 - 2.5 × 模数']
+  circular_pitch decimal [not null, note: '齿距 = π × 模数']
+}
+
+Table risk_warnings {
+  id integer [pk, increment]
+  result_id integer [not null]
+  stage_input_id integer
+  risk_code varchar [not null, note: '风险类型，例如 low-teeth / large-ratio / small-module-high-torque']
+  message varchar [not null]
+  detail varchar
+}
+
+Ref: stage_inputs.case_id > calculation_cases.id
+
+Ref: calculation_results.case_id > calculation_cases.id
+
+Ref: stage_calculations.result_id > calculation_results.id
+Ref: stage_calculations.stage_input_id > stage_inputs.id
+
+Ref: gear_geometries.stage_input_id > stage_inputs.id
+
+Ref: risk_warnings.result_id > calculation_results.id
+Ref: risk_warnings.stage_input_id > stage_inputs.id
