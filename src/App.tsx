@@ -101,9 +101,6 @@ function App() {
                 setInput((current) => ({ ...current, motorTorque: value }))
               }
               onDefaultEfficiencyChange={updateDefaultEfficiency}
-              onPressureAngleChange={(value) =>
-                setInput((current) => ({ ...current, pressureAngle: value }))
-              }
               onStageCountChange={(value: StageCount) =>
                 setInput((current) => ({ ...current, stageCount: value }))
               }

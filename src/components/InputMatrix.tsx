@@ -5,7 +5,6 @@ interface InputMatrixProps {
   onMotorRpmChange: (value: number) => void;
   onMotorTorqueChange: (value: number) => void;
   onDefaultEfficiencyChange: (value: number) => void;
-  onPressureAngleChange: (value: number) => void;
   onStageCountChange: (value: StageCount) => void;
   onStageChange: (index: number, stage: StageInput) => void;
 }
@@ -15,26 +14,32 @@ const CompactNumberField = ({
   unit,
   value,
   min,
+  max,
   step,
+  disabled = false,
   onChange,
 }: {
   label: string;
   unit: string;
   value: number;
   min?: number;
+  max?: number;
   step?: number;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) => (
   <label className="grid min-w-0 gap-1">
     <span className="truncate text-xs font-medium text-slate-600">{label}</span>
     <div className="flex min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
       <input
-        className="min-w-0 flex-1 px-2 py-1.5 text-sm font-semibold text-slate-950 outline-none"
         type="number"
         min={min}
+        max={max}
         step={step}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
+        className="min-w-0 flex-1 px-2 py-1.5 text-sm font-semibold text-slate-950 outline-none disabled:bg-slate-100 disabled:text-slate-500"
       />
       <span className="flex w-10 shrink-0 items-center justify-center border-l border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-500">
         {unit}
@@ -44,14 +49,18 @@ const CompactNumberField = ({
 );
 
 const StageNumberInput = ({
+  ariaLabel,
   value,
   min,
+  max,
   step,
   disabled,
   onChange,
 }: {
+  ariaLabel: string;
   value: number;
   min?: number;
+  max?: number;
   step?: number;
   disabled: boolean;
   onChange: (value: number) => void;
@@ -59,7 +68,9 @@ const StageNumberInput = ({
   <input
     className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm font-semibold text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-slate-100 disabled:text-slate-400"
     type="number"
+    aria-label={ariaLabel}
     min={min}
+    max={max}
     step={step}
     value={value}
     disabled={disabled}
@@ -72,7 +83,6 @@ export const InputMatrix = ({
   onMotorRpmChange,
   onMotorTorqueChange,
   onDefaultEfficiencyChange,
-  onPressureAngleChange,
   onStageCountChange,
   onStageChange,
 }: InputMatrixProps) => {
@@ -108,17 +118,17 @@ export const InputMatrix = ({
             label="默认效率"
             unit="%"
             min={0}
+            max={100}
             step={0.1}
             value={input.defaultEfficiency}
             onChange={onDefaultEfficiencyChange}
           />
           <CompactNumberField
-            label="压力角"
+            label="压力角（首版固定）"
             unit="deg"
-            min={0}
-            step={1}
             value={input.pressureAngle}
-            onChange={onPressureAngleChange}
+            disabled
+            onChange={() => undefined}
           />
         </div>
 
@@ -135,6 +145,7 @@ export const InputMatrix = ({
                     : "text-slate-600 hover:bg-white hover:text-slate-950"
                 }`}
                 onClick={() => onStageCountChange(count as StageCount)}
+                aria-pressed={input.stageCount === count}
               >
                 {count} 级
               </button>
@@ -164,34 +175,40 @@ export const InputMatrix = ({
                 >
                   <div className="flex items-center text-sm font-bold text-slate-800">{index + 1}</div>
                   <StageNumberInput
+                    ariaLabel={`第 ${index + 1} 级模数`}
                     value={stage.module}
-                    min={0}
+                    min={0.1}
                     step={0.1}
                     disabled={disabled}
                     onChange={(value) => updateStage(index, { module: value })}
                   />
                   <StageNumberInput
+                    ariaLabel={`第 ${index + 1} 级主动齿轮齿数`}
                     value={stage.driverTeeth}
-                    min={0}
+                    min={1}
                     step={1}
                     disabled={disabled}
                     onChange={(value) => updateStage(index, { driverTeeth: value })}
                   />
                   <StageNumberInput
+                    ariaLabel={`第 ${index + 1} 级从动齿轮齿数`}
                     value={stage.drivenTeeth}
-                    min={0}
+                    min={1}
                     step={1}
                     disabled={disabled}
                     onChange={(value) => updateStage(index, { drivenTeeth: value })}
                   />
                   <StageNumberInput
+                    ariaLabel={`第 ${index + 1} 级效率`}
                     value={stage.efficiency}
                     min={0}
+                    max={100}
                     step={0.1}
                     disabled={disabled}
                     onChange={(value) => updateStage(index, { efficiency: value })}
                   />
                   <input
+                    aria-label={`第 ${index + 1} 级备注`}
                     className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-slate-100 disabled:text-slate-400"
                     value={stage.note ?? ""}
                     disabled={disabled}

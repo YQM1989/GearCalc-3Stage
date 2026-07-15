@@ -16,8 +16,11 @@ const clampStageCount = (value: number): 1 | 2 | 3 => {
 const positiveOrZero = (value: number) =>
   Number.isFinite(value) && value > 0 ? value : 0;
 
+const validTeethOrZero = (value: number) =>
+  Number.isFinite(value) && Number.isInteger(value) && value > 0 ? value : 0;
+
 const percentToFactor = (value: number) =>
-  Number.isFinite(value) ? Math.max(value, 0) / 100 : 0;
+  Number.isFinite(value) ? Math.min(Math.max(value, 0), 100) / 100 : 0;
 
 const calculateGearGeometry = (
   stageIndex: number,
@@ -26,7 +29,7 @@ const calculateGearGeometry = (
   teeth: number,
 ): GearGeometry => {
   const moduleValue = positiveOrZero(stage.module);
-  const teethValue = positiveOrZero(teeth);
+  const teethValue = validTeethOrZero(teeth);
 
   return {
     stageIndex,
@@ -40,17 +43,102 @@ const calculateGearGeometry = (
   };
 };
 
+const buildInputWarnings = (
+  input: GearCalcInput,
+  activeStages: StageInput[],
+): RiskWarning[] => {
+  const warnings: RiskWarning[] = [];
+
+  if (!Number.isFinite(input.motorRpm) || input.motorRpm <= 0) {
+    warnings.push({
+      id: "invalid-motor-rpm",
+      severity: "error",
+      message: "输入无效：电机转速必须大于 0。",
+    });
+  }
+
+  if (!Number.isFinite(input.motorTorque) || input.motorTorque < 0) {
+    warnings.push({
+      id: "invalid-motor-torque",
+      severity: "error",
+      message: "输入无效：电机扭矩不能小于 0。",
+    });
+  }
+
+  if (
+    !Number.isFinite(input.defaultEfficiency) ||
+    input.defaultEfficiency < 0 ||
+    input.defaultEfficiency > 100
+  ) {
+    warnings.push({
+      id: "invalid-default-efficiency",
+      severity: "error",
+      message: "输入无效：默认效率必须在 0% 到 100% 之间。",
+    });
+  }
+
+  if (input.pressureAngle !== 20) {
+    warnings.push({
+      id: "unsupported-pressure-angle",
+      severity: "error",
+      message: "首版仅支持标准 20° 压力角。",
+    });
+  }
+
+  activeStages.forEach((stage, stageIndex) => {
+    const stageLabel = `第 ${stageIndex + 1} 级`;
+
+    if (!Number.isFinite(stage.module) || stage.module <= 0) {
+      warnings.push({
+        id: `invalid-module-${stageIndex}`,
+        severity: "error",
+        message: `输入无效：${stageLabel}模数必须大于 0。`,
+      });
+    }
+
+    [
+      { key: "driver", label: "主动齿轮", value: stage.driverTeeth },
+      { key: "driven", label: "从动齿轮", value: stage.drivenTeeth },
+    ].forEach((gear) => {
+      if (!Number.isFinite(gear.value) || !Number.isInteger(gear.value) || gear.value <= 0) {
+        warnings.push({
+          id: `invalid-teeth-${stageIndex}-${gear.key}`,
+          severity: "error",
+          message: `输入无效：${stageLabel}${gear.label}齿数必须是正整数。`,
+        });
+      }
+    });
+
+    if (!Number.isFinite(stage.efficiency) || stage.efficiency < 0 || stage.efficiency > 100) {
+      warnings.push({
+        id: `invalid-efficiency-${stageIndex}`,
+        severity: "error",
+        message: `输入无效：${stageLabel}效率必须在 0% 到 100% 之间。`,
+      });
+    }
+  });
+
+  return warnings;
+};
+
 const buildRiskWarnings = (
+  input: GearCalcInput,
   activeStages: StageInput[],
   stageResults: StageCalculation[],
 ): RiskWarning[] => {
-  const risks: RiskWarning[] = [];
+  const risks: RiskWarning[] = buildInputWarnings(input, activeStages);
 
   activeStages.forEach((stage, stageIndex) => {
     const lowToothGears = [
       { role: "主动齿轮", teeth: stage.driverTeeth },
       { role: "从动齿轮", teeth: stage.drivenTeeth },
-    ].filter((gear) => Number.isFinite(gear.teeth) && gear.teeth > 0 && gear.teeth < 17);
+    ].filter(
+      (gear) =>
+        Number.isFinite(gear.teeth) &&
+        Number.isInteger(gear.teeth) &&
+        gear.teeth > 0 &&
+        gear.teeth < 17,
+    );
 
     lowToothGears.forEach((gear) => {
       risks.push({
@@ -72,7 +160,9 @@ const buildRiskWarnings = (
       });
     }
 
-    if (positiveOrZero(stage.module) <= 0.5 && stageResult.outputTorque >= 1) {
+    const moduleValue = positiveOrZero(stage.module);
+
+    if (moduleValue > 0 && moduleValue <= 0.5 && stageResult.outputTorque >= 1) {
       risks.push({
         id: `small-module-high-torque-${stageIndex}`,
         message:
@@ -120,16 +210,22 @@ export const calculateGearReduction = (
 
   activeStages.forEach((stage, index) => {
     const moduleValue = positiveOrZero(stage.module);
-    const driverTeeth = positiveOrZero(stage.driverTeeth);
-    const drivenTeeth = positiveOrZero(stage.drivenTeeth);
-    const ratio = driverTeeth > 0 ? drivenTeeth / driverTeeth : 0;
-    const efficiencyPercent = Number.isFinite(stage.efficiency)
+    const driverTeeth = validTeethOrZero(stage.driverTeeth);
+    const drivenTeeth = validTeethOrZero(stage.drivenTeeth);
+    const hasValidGearPair = driverTeeth > 0 && drivenTeeth > 0;
+    const ratio = hasValidGearPair ? drivenTeeth / driverTeeth : 0;
+    const rawEfficiency = Number.isFinite(stage.efficiency)
       ? stage.efficiency
       : input.defaultEfficiency;
+    const efficiencyPercent = Number.isFinite(rawEfficiency)
+      ? Math.min(Math.max(rawEfficiency, 0), 100)
+      : 0;
     const efficiency = percentToFactor(efficiencyPercent);
     const outputRpm = ratio > 0 ? currentRpm / ratio : 0;
     const outputTorque = ratio > 0 ? currentTorque * ratio * efficiency : 0;
-    const centerDistance = moduleValue * (driverTeeth + drivenTeeth) / 2;
+    const centerDistance = hasValidGearPair
+      ? moduleValue * (driverTeeth + drivenTeeth) / 2
+      : 0;
 
     totalRatio *= ratio > 0 ? ratio : 0;
     totalEfficiency *= efficiency;
@@ -163,6 +259,6 @@ export const calculateGearReduction = (
     outputTorque: currentTorque,
     totalEfficiency,
     outputDirection: stageCount % 2 === 0 ? "与电机同向" : "与电机反向",
-    risks: buildRiskWarnings(activeStages, stages),
+    risks: buildRiskWarnings(input, activeStages, stages),
   };
 };

@@ -42,6 +42,7 @@ export interface StageCalculation {
 
 export interface RiskWarning {
   id: string;
+  severity?: "error" | "warning";
   message: string;
   detail?: string;
 }
