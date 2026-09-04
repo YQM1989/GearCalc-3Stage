@@ -38,7 +38,7 @@ jobs:
         run: npm run tauri -- build --bundles dmg --ci --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
 
       - name: Upload macOS installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GearCalc-3Stage-0.1.0-macos-arm64
           path: src-tauri/target/release/bundle/dmg/*.dmg
@@ -75,7 +75,7 @@ jobs:
         run: npm run tauri -- build --bundles nsis --ci
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GearCalc-3Stage-0.1.0-windows-x64
           path: src-tauri/target/release/bundle/nsis/*.exe
