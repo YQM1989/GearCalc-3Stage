@@ -58,7 +58,7 @@ GearCalc-3Stage 是一个面向 1–3 级外啮合直齿轮方案前期估算的
 - Microsoft C++ Build Tools；
 - WebView2 Runtime。
 
-Windows 桌面构建尚未在本次 Mac 工程闭环中复验。
+仓库提供手动触发的 GitHub Actions 构建流程，由 GitHub 的 Windows 环境生成 NSIS `.exe` 安装程序。
 
 ## Web 版运行与验证
 
@@ -94,6 +94,15 @@ npm run tauri -- build --bundles app,dmg --ci --config '{"bundle":{"macOS":{"sig
 
 ad-hoc 签名只适合当前机器上的工程验收。公开分发必须使用 YQM 自己的 Apple Developer ID，并完成 hardened runtime、签名、公证和 stapling 验证；任何证书、密码、API Key 或私钥都不能写入仓库。
 
+## 跨平台安装包
+
+GitHub 仓库的 **Actions → Build desktop installers → Run workflow** 可以手动生成两份下载文件：
+
+- `GearCalc-3Stage-0.1.0-macos-arm64.zip`，内含 Apple Silicon Mac 使用的 `.dmg`；
+- `GearCalc-3Stage-0.1.0-windows-x64.zip`，内含 64 位 Windows 使用的 NSIS `.exe`。
+
+该流程只在手动触发时运行，不会随每次提交自动打包，也不会自动创建 GitHub Release。Mac 包采用 ad-hoc 签名，Windows 包尚未做商业代码签名；它们适合当前阶段的内部测试，不等同于面向公众发布的正式签名版本。
+
 ## 已验证示例
 
 两级参数：
@@ -113,6 +122,7 @@ src/
   types/gear.ts           数据类型
 src-tauri/                Tauri/Rust 桌面壳
 tests/                    计算单元测试
+.github/workflows/        手动生成 macOS/Windows 安装包
 docs/
   SCHEMA.md               字段、单位、公式和校验规则
   FLOW.md                 数据流、风险流和验收顺序

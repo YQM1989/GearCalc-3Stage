@@ -9,7 +9,7 @@ interface InputMatrixProps {
   onStageChange: (index: number, stage: StageInput) => void;
 }
 
-const CompactNumberField = ({
+const NumberField = ({
   label,
   unit,
   value,
@@ -17,20 +17,22 @@ const CompactNumberField = ({
   max,
   step,
   disabled = false,
+  compact = false,
   onChange,
 }: {
   label: string;
-  unit: string;
+  unit?: string;
   value: number;
   min?: number;
   max?: number;
   step?: number;
   disabled?: boolean;
+  compact?: boolean;
   onChange: (value: number) => void;
 }) => (
-  <label className="grid min-w-0 gap-1">
+  <label className={compact ? "grid min-w-0 gap-1" : "grid grid-cols-[112px_minmax(0,1fr)] items-center gap-2"}>
     <span className="truncate text-xs font-medium text-slate-600">{label}</span>
-    <div className="flex min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
+    <div className="flex min-w-0 overflow-hidden rounded border border-slate-300 bg-white focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/10">
       <input
         type="number"
         min={min}
@@ -39,43 +41,17 @@ const CompactNumberField = ({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="min-w-0 flex-1 px-2 py-1.5 text-sm font-semibold text-slate-950 outline-none disabled:bg-slate-100 disabled:text-slate-500"
+        className={`min-w-0 flex-1 bg-white px-2 text-sm font-semibold text-slate-950 outline-none disabled:bg-slate-100 disabled:text-slate-500 ${
+          compact ? "h-8" : "h-9"
+        }`}
       />
-      <span className="flex w-10 shrink-0 items-center justify-center border-l border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-500">
-        {unit}
-      </span>
+      {unit ? (
+        <span className="flex min-w-10 shrink-0 items-center justify-center border-l border-slate-200 bg-slate-50 px-1 text-[10px] font-semibold text-slate-500">
+          {unit}
+        </span>
+      ) : null}
     </div>
   </label>
-);
-
-const StageNumberInput = ({
-  ariaLabel,
-  value,
-  min,
-  max,
-  step,
-  disabled,
-  onChange,
-}: {
-  ariaLabel: string;
-  value: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  disabled: boolean;
-  onChange: (value: number) => void;
-}) => (
-  <input
-    className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm font-semibold text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-slate-100 disabled:text-slate-400"
-    type="number"
-    aria-label={ariaLabel}
-    min={min}
-    max={max}
-    step={step}
-    value={value}
-    disabled={disabled}
-    onChange={(event) => onChange(Number(event.target.value))}
-  />
 );
 
 export const InputMatrix = ({
@@ -91,58 +67,31 @@ export const InputMatrix = ({
   };
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-3 py-2">
-        <h2 className="text-sm font-semibold text-slate-950">输入参数</h2>
+    <section className="min-h-full bg-[#fbfcfc]">
+      <div className="flex h-12 items-center border-b border-slate-200 px-4">
+        <h2 className="border-l-[3px] border-blue-600 pl-2 text-sm font-semibold text-slate-950">输入参数</h2>
       </div>
 
-      <div className="grid gap-3 p-3">
-        <div className="grid grid-cols-2 gap-2">
-          <CompactNumberField
-            label="电机转速"
-            unit="rpm"
-            min={0}
-            step={1}
-            value={input.motorRpm}
-            onChange={onMotorRpmChange}
-          />
-          <CompactNumberField
-            label="电机扭矩"
-            unit="N·m"
-            min={0}
-            step={0.01}
-            value={input.motorTorque}
-            onChange={onMotorTorqueChange}
-          />
-          <CompactNumberField
-            label="默认效率"
-            unit="%"
-            min={0}
-            max={100}
-            step={0.1}
-            value={input.defaultEfficiency}
-            onChange={onDefaultEfficiencyChange}
-          />
-          <CompactNumberField
-            label="压力角（首版固定）"
-            unit="deg"
-            value={input.pressureAngle}
-            disabled
-            onChange={() => undefined}
-          />
+      <div className="px-4 py-3">
+        <div className="mb-2 text-sm font-semibold text-slate-900">电机参数</div>
+        <div className="grid gap-2">
+          <NumberField label="电机转速" unit="rpm" min={0} step={1} value={input.motorRpm} onChange={onMotorRpmChange} />
+          <NumberField label="电机扭矩" unit="N·m" min={0} step={0.01} value={input.motorTorque} onChange={onMotorTorqueChange} />
+          <NumberField label="默认效率" unit="%" min={0} max={100} step={0.1} value={input.defaultEfficiency} onChange={onDefaultEfficiencyChange} />
+          <NumberField label="压力角（固定）" unit="deg" value={input.pressureAngle} disabled onChange={() => undefined} />
         </div>
 
-        <div>
-          <div className="mb-1 text-xs font-medium text-slate-600">级数</div>
-          <div className="grid grid-cols-3 rounded-md border border-slate-300 bg-slate-50 p-1">
+        <div className="mt-4">
+          <div className="mb-2 text-sm font-semibold text-slate-900">级数</div>
+          <div className="grid grid-cols-3 overflow-hidden rounded border border-slate-300 bg-white">
             {[1, 2, 3].map((count) => (
               <button
                 key={count}
                 type="button"
-                className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+                className={`h-9 border-r border-slate-300 text-sm font-semibold transition last:border-r-0 ${
                   input.stageCount === count
-                    ? "bg-teal-700 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-white hover:text-slate-950"
+                    ? "bg-blue-700 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
                 onClick={() => onStageCountChange(count as StageCount)}
                 aria-pressed={input.stageCount === count}
@@ -153,73 +102,38 @@ export const InputMatrix = ({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200">
-          <div className="grid grid-cols-[38px_repeat(4,minmax(0,1fr))_1.15fr] gap-1 bg-slate-50 px-2 py-2 text-[11px] font-semibold text-slate-500">
-            <div>级</div>
-            <div>模数</div>
-            <div>主动齿</div>
-            <div>从动齿</div>
-            <div>效率</div>
-            <div>备注</div>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {input.stages.map((stage, index) => {
-              const disabled = index >= input.stageCount;
+        <div className="mt-3 grid gap-2">
+          {input.stages.map((stage, index) => {
+            const disabled = index >= input.stageCount;
 
-              return (
-                <div
-                  key={index}
-                  className={`grid grid-cols-[38px_repeat(4,minmax(0,1fr))_1.15fr] gap-1 px-2 py-2 ${
-                    disabled ? "bg-slate-50/70" : "bg-white"
-                  }`}
-                >
-                  <div className="flex items-center text-sm font-bold text-slate-800">{index + 1}</div>
-                  <StageNumberInput
-                    ariaLabel={`第 ${index + 1} 级模数`}
-                    value={stage.module}
-                    min={0.1}
-                    step={0.1}
-                    disabled={disabled}
-                    onChange={(value) => updateStage(index, { module: value })}
-                  />
-                  <StageNumberInput
-                    ariaLabel={`第 ${index + 1} 级主动齿轮齿数`}
-                    value={stage.driverTeeth}
-                    min={1}
-                    step={1}
-                    disabled={disabled}
-                    onChange={(value) => updateStage(index, { driverTeeth: value })}
-                  />
-                  <StageNumberInput
-                    ariaLabel={`第 ${index + 1} 级从动齿轮齿数`}
-                    value={stage.drivenTeeth}
-                    min={1}
-                    step={1}
-                    disabled={disabled}
-                    onChange={(value) => updateStage(index, { drivenTeeth: value })}
-                  />
-                  <StageNumberInput
-                    ariaLabel={`第 ${index + 1} 级效率`}
-                    value={stage.efficiency}
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    disabled={disabled}
-                    onChange={(value) => updateStage(index, { efficiency: value })}
-                  />
-                  <input
-                    aria-label={`第 ${index + 1} 级备注`}
-                    className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-slate-100 disabled:text-slate-400"
-                    value={stage.note ?? ""}
-                    disabled={disabled}
-                    onChange={(event) => updateStage(index, { note: event.target.value })}
-                    placeholder="可选"
-                  />
+            return (
+              <section
+                key={index}
+                className={`rounded border px-3 py-2.5 ${
+                  disabled ? "border-slate-200 bg-slate-100/70 opacity-60" : "border-slate-300 bg-white"
+                }`}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-950">第 {index + 1} 级</h3>
+                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                    <span className={`h-2 w-2 rounded-full ${disabled ? "bg-slate-400" : "bg-emerald-700"}`} />
+                    {disabled ? "未启用" : "正常"}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <NumberField compact label="模数 m" value={stage.module} min={0.1} step={0.1} disabled={disabled} onChange={(value) => updateStage(index, { module: value })} />
+                  <NumberField compact label="主动齿数" value={stage.driverTeeth} min={1} step={1} disabled={disabled} onChange={(value) => updateStage(index, { driverTeeth: value })} />
+                  <NumberField compact label="从动齿数" value={stage.drivenTeeth} min={1} step={1} disabled={disabled} onChange={(value) => updateStage(index, { drivenTeeth: value })} />
+                  <NumberField compact label="效率 %" value={stage.efficiency} min={0} max={100} step={0.1} disabled={disabled} onChange={(value) => updateStage(index, { efficiency: value })} />
+                </div>
+              </section>
+            );
+          })}
         </div>
+
+        <p className="mt-3 text-[11px] leading-5 text-slate-500">
+          效率为各级单对齿轮效率；齿形按标准 20° 压力角作工程示意。
+        </p>
       </div>
     </section>
   );

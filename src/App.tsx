@@ -63,26 +63,31 @@ function App() {
   };
 
   return (
-    <main className="h-screen min-w-[1280px] overflow-hidden bg-slate-100">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col px-3 py-3">
-        <header className="mb-3 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 pb-3">
-          <div>
-            <p className="text-xs font-semibold text-teal-700">GearCalc-3Stage</p>
-            <h1 className="mt-0.5 text-2xl font-bold tracking-normal text-slate-950">
+    <main className="h-screen min-w-[1280px] overflow-hidden bg-[#f3f5f6]">
+      <div className="mx-auto flex h-full max-w-[1680px] flex-col border-x border-slate-200 bg-white">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-5 border-b border-slate-300 bg-white px-5">
+          <div className="flex items-center gap-8">
+            <h1 className="text-[23px] font-bold tracking-tight text-slate-950">
               三级齿轮减速参数计算器
             </h1>
+            <div className="hidden items-center gap-5 border-l border-slate-200 pl-7 text-sm text-slate-600 xl:flex">
+              <span>参数方案</span>
+              <span>计算校核</span>
+              <span>工程视图</span>
+              <span className="border-l border-slate-200 pl-5">单位：SI</span>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
               type="button"
-              className="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+              className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
               onClick={() => setInput(cloneInput(exampleInput))}
             >
               载入示例
             </button>
             <button
               type="button"
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-950"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
               onClick={() => setInput(cloneInput(defaultInput))}
             >
               重置
@@ -90,36 +95,41 @@ function App() {
           </div>
         </header>
 
-        <ResultSummary result={result} />
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_clamp(190px,23vh,242px)]">
+          <div className="grid min-h-0 grid-cols-[clamp(300px,23.5vw,350px)_minmax(0,1fr)_clamp(240px,18vw,274px)] divide-x divide-slate-300">
+            <aside className="min-h-0 overflow-y-auto bg-[#fbfcfc]">
+              <InputMatrix
+                input={input}
+                onMotorRpmChange={(value) =>
+                  setInput((current) => ({ ...current, motorRpm: value }))
+                }
+                onMotorTorqueChange={(value) =>
+                  setInput((current) => ({ ...current, motorTorque: value }))
+                }
+                onDefaultEfficiencyChange={updateDefaultEfficiency}
+                onStageCountChange={(value: StageCount) =>
+                  setInput((current) => ({ ...current, stageCount: value }))
+                }
+                onStageChange={updateStage}
+              />
+            </aside>
 
-        <div className="mt-3 grid min-h-0 flex-1 grid-cols-[430px_minmax(0,1fr)] gap-3">
-          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
-            <InputMatrix
-              input={input}
-              onMotorRpmChange={(value) => setInput((current) => ({ ...current, motorRpm: value }))}
-              onMotorTorqueChange={(value) =>
-                setInput((current) => ({ ...current, motorTorque: value }))
-              }
-              onDefaultEfficiencyChange={updateDefaultEfficiency}
-              onStageCountChange={(value: StageCount) =>
-                setInput((current) => ({ ...current, stageCount: value }))
-              }
-              onStageChange={updateStage}
-            />
-            <div className="min-h-0 overflow-y-auto overscroll-contain pr-1">
-              <RiskWarnings risks={result.risks} />
+            <div className="min-h-0 overflow-hidden">
+              <GearTrainPreview stages={input.stages.slice(0, input.stageCount)} result={result} />
             </div>
+
+            <aside className="min-h-0 overflow-y-auto bg-[#fbfcfc]">
+              <ResultSummary result={result} />
+              <RiskWarnings risks={result.risks} />
+            </aside>
           </div>
 
-          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
-            <GearTrainPreview stages={input.stages.slice(0, input.stageCount)} result={result} />
-            <div className="grid min-h-0 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3">
-              <div className="min-h-0 overflow-auto overscroll-contain">
-                <StageResultTable stages={result.stages} />
-              </div>
-              <div className="min-h-0 overflow-auto overscroll-contain">
-                <GearDimensionTable gears={result.gears} />
-              </div>
+          <div className="grid min-h-0 grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] divide-x divide-slate-300 border-t border-slate-300 bg-white">
+            <div className="min-h-0 overflow-auto">
+              <StageResultTable stages={result.stages} />
+            </div>
+            <div className="min-h-0 overflow-auto">
+              <GearDimensionTable gears={result.gears} />
             </div>
           </div>
         </div>
