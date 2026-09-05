@@ -60,6 +60,21 @@ GearCalc-3Stage 是一个面向 1–3 级外啮合直齿轮方案前期估算的
 
 仓库提供手动触发的 GitHub Actions 构建流程，由 GitHub 的 Windows 环境生成 NSIS `.exe` 安装程序。
 
+## 拉取代码后必须重建
+
+`git pull` 只更新源代码；桌面应用 `src-tauri/target/release/gearcalc-3stage.exe` 是编译产物，不会随 pull 自动更新。直接双击旧 exe 会看到旧界面，造成"代码已更新但程序没变化"的误判。
+
+因此每次 `git pull` 之后，必须紧接着执行：
+
+```bash
+npm install          # 同步依赖（package.json / package-lock.json 可能已变化）
+npm run tauri build  # 重新生成桌面应用
+```
+
+构建完成后确认 `src-tauri/target/release/gearcalc-3stage.exe` 的修改时间已更新为当前时间，再打开使用。只想快速预览界面、不需要生成 exe 时，可改用 `npm run tauri dev`。
+
+**AI 助手注意**：帮用户执行 `git pull` 后，默认主动跑完上面两步并报告新 exe 的生成时间，不要让用户继续运行旧的编译产物。
+
 ## Web 版运行与验证
 
 ```bash
