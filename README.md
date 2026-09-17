@@ -60,9 +60,27 @@ GearCalc-3Stage 是一个面向 1–3 级外啮合直齿轮方案前期估算的
 
 仓库提供手动触发的 GitHub Actions 构建流程，由 GitHub 的 Windows 环境生成 NSIS `.exe` 安装程序。
 
+## 安装包与正确启动入口
+
+GitHub 仓库保存的是源代码。`git pull` 不会下载或更新已经编译好的桌面程序，因为 `src-tauri/target/` 已被 Git 忽略。需要直接安装时，请在 GitHub 的 **Actions → Build desktop installers** 中下载对应平台的构建产物：
+
+- Mac：下载 `GearCalc-3Stage-*-macos-arm64.zip`，解压得到 `.dmg`；打开 `.dmg` 后将 `GearCalc-3Stage.app` 拖入“应用程序”，以后从“应用程序”或启动台打开。
+- Windows：下载 `GearCalc-3Stage-*-windows-x64.zip`，解压后运行 `*-setup.exe` 完成安装，以后从开始菜单或桌面快捷方式打开。
+
+Mac 本地构建后会同时看到几种文件，它们用途不同：
+
+| 文件 | 含义 | 是否作为日常启动入口 |
+| --- | --- | --- |
+| `src-tauri/target/release/gearcalc-3stage` | 应用内部的 Unix 可执行文件；Finder 双击时会由终端承载运行 | 否 |
+| `src-tauri/target/release/bundle/macos/GearCalc-3Stage.app` | 完整的 Mac 应用包，包含可执行文件、图标、配置和签名信息 | 可以，适合本机验证 |
+| `src-tauri/target/release/bundle/dmg/*.dmg` | Mac 安装盘镜像，打开后把 `.app` 拖入“应用程序” | 推荐的安装入口 |
+| `src-tauri/target/release/bundle/nsis/*-setup.exe` | Windows NSIS 安装程序 | Windows 推荐的安装入口 |
+
+`.app` 在 Finder 中看起来像一个文件，实际是 macOS 识别的目录包。它内部仍包含前述 Unix 可执行文件，但 macOS 会通过应用启动服务运行它，所以不会出现一直伴随程序的终端窗口。`.dmg` 本身是用来搬运和安装 `.app` 的磁盘镜像，并不是应用主体。
+
 ## 拉取代码后必须重建
 
-`git pull` 只更新源代码；桌面应用 `src-tauri/target/release/gearcalc-3stage.exe` 是编译产物，不会随 pull 自动更新。直接双击旧 exe 会看到旧界面，造成"代码已更新但程序没变化"的误判。
+`git pull` 只更新源代码，不会自动重建 `src-tauri/target/` 中的桌面程序。继续打开旧程序会看到旧界面，造成“代码已更新但程序没变化”的误判。
 
 因此每次 `git pull` 之后，必须紧接着执行：
 
@@ -71,9 +89,14 @@ npm install          # 同步依赖（package.json / package-lock.json 可能已
 npm run tauri build  # 重新生成桌面应用
 ```
 
-构建完成后确认 `src-tauri/target/release/gearcalc-3stage.exe` 的修改时间已更新为当前时间，再打开使用。只想快速预览界面、不需要生成 exe 时，可改用 `npm run tauri dev`。
+构建完成后按当前系统使用正确入口：
 
-**AI 助手注意**：帮用户执行 `git pull` 后，默认主动跑完上面两步并报告新 exe 的生成时间，不要让用户继续运行旧的编译产物。
+- macOS：打开 `src-tauri/target/release/bundle/macos/GearCalc-3Stage.app`，不要双击 `target/release/gearcalc-3stage`。
+- Windows：运行 `src-tauri/target/release/bundle/nsis/*-setup.exe` 安装，或检查新生成的 `target/release/gearcalc-3stage.exe`。
+
+只想快速预览界面、不需要生成安装包时，可改用 `npm run tauri dev`；该模式由终端启动，开发期间终端需要保持运行。
+
+**AI 助手注意**：帮用户执行 `git pull` 后，默认主动跑完上面两步，报告当前平台安装包或应用包的生成时间，并明确正确启动入口。
 
 ## Web 版运行与验证
 
