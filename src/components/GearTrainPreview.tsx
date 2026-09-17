@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GearCalculationResult, StageInput } from "../types/gear";
 
 interface GearTrainPreviewProps {
@@ -15,6 +15,7 @@ interface GearProfileProps {
   phase: number;
   fill: string;
   stroke: string;
+  rpm: number;
 }
 
 const DRIVER_FILL = "#a8d4cd";
@@ -75,11 +76,13 @@ const GearProfile = ({
   phase,
   fill,
   stroke,
+  rpm,
 }: GearProfileProps) => {
   const boreRadius = Math.max(3.5, Math.min(12, pitchRadius * 0.28));
 
   return (
     <g>
+      <g data-rotor data-rpm={rpm} data-cx={cx} data-cy={cy}>
       <path
         d={getGearPath(cx, cy, pitchRadius, teeth, toothPitch, phase)}
         fill={fill}
@@ -87,6 +90,9 @@ const GearProfile = ({
         strokeLinejoin="round"
         strokeWidth="1.2"
       />
+      <line x1={cx + boreRadius} y1={cy} x2={cx + pitchRadius * 0.78} y2={cy} stroke={stroke} strokeWidth="2.5" />
+      <circle cx={cx + pitchRadius * 0.72} cy={cy} r="2.5" fill={stroke} />
+      </g>
       <circle
         cx={cx}
         cy={cy}
@@ -173,6 +179,35 @@ const MeshDetail = ({ stage, stageIndex }: { stage: StageInput; stageIndex: numb
 };
 
 export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [playing, setPlaying] = useState(() => !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [playbackRate, setPlaybackRate] = useState(0.02);
+  const motionValid = !result.risks.some((risk) => risk.severity === "error");
+
+  useEffect(() => {
+    if (!playing || !motionValid) return;
+    const rotors = Array.from(svgRef.current?.querySelectorAll<SVGGElement>("[data-rotor]") ?? []);
+    let frame = 0;
+    let previous: number | undefined;
+    const tick = (time: number) => {
+      const elapsed = previous === undefined ? 0 : (time - previous) / 1000;
+      previous = time;
+      for (const rotor of rotors) {
+        const angle = (Number(rotor.dataset.angle ?? 0) + Number(rotor.dataset.rpm) * 6 * playbackRate * elapsed) % 360;
+        rotor.dataset.angle = String(angle);
+        rotor.setAttribute("transform", `rotate(${angle} ${rotor.dataset.cx} ${rotor.dataset.cy})`);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    const resetClock = () => { previous = undefined; };
+    document.addEventListener("visibilitychange", resetClock);
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", resetClock);
+    };
+  }, [playing, playbackRate, motionValid, result]);
+
   const activeStages = stages.slice(0, result.stages.length);
   const [selectedStage, setSelectedStage] = useState(0);
   const safeSelectedStage = Math.min(selectedStage, Math.max(0, activeStages.length - 1));
@@ -191,8 +226,21 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-2 text-xs text-slate-600">
+        <button type="button" onClick={() => setPlaying(!playing)} disabled={!motionValid} className="rounded border border-slate-300 px-3 py-1 text-slate-900 disabled:opacity-40">
+          {playing ? "暂停" : "播放"}
+        </button>
+        <label className="flex items-center gap-2">播放倍率
+          <select aria-label="播放倍率" value={playbackRate} onChange={(event) => setPlaybackRate(Number(event.target.value))} className="rounded border border-slate-300 bg-white px-2 py-1">
+            {[0.005, 0.01, 0.02, 0.05, 0.1, 1].map((rate) => <option key={rate} value={rate}>×{rate}{rate === 1 ? " 实时" : " 慢放"}</option>)}
+          </select>
+        </label>
+        <span>{!motionValid ? "参数无效 · 动画停止" : playing ? "按真实速比同步旋转" : "已暂停"} · 数值为实际 rpm</span>
+        <span className="text-slate-400">高速看不清时请降低倍率</span>
+      </div>
       <div className="min-h-0 flex-1 p-2">
         <svg
+          ref={svgRef}
           viewBox="0 0 900 575"
           role="img"
           aria-label="按模数、齿数和节圆关系绘制的三级直齿轮传动示意图"
@@ -256,7 +304,7 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
 
             return (
               <g
-                key={index}
+                key={`${index}-${stage.driverTeeth}-${stage.drivenTeeth}`}
                 role="button"
                 tabIndex={0}
                 aria-label={`查看第 ${index + 1} 级啮合细节`}
@@ -290,6 +338,7 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                 </g>
                 <path
                   d={`M ${centerX - 25} 137 A 31 31 0 0 1 ${centerX + 25} 137`}
+                  transform={index % 2 === 1 ? `translate(${centerX * 2} 0) scale(-1 1)` : undefined}
                   fill="none"
                   stroke="#12806d"
                   strokeWidth="1.5"
@@ -306,6 +355,7 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                   phase={0}
                   fill={DRIVER_FILL}
                   stroke={DRIVER_STROKE}
+                  rpm={stageResult.inputRpm * (index % 2 === 0 ? 1 : -1)}
                 />
                 <GearProfile
                   cx={drivenCx}
@@ -316,6 +366,7 @@ export const GearTrainPreview = ({ stages, result }: GearTrainPreviewProps) => {
                   phase={drivenPhase}
                   fill={DRIVEN_FILL}
                   stroke={DRIVEN_STROKE}
+                  rpm={stageResult.outputRpm * (index % 2 === 0 ? -1 : 1)}
                 />
                 <line
                   x1={contactX - actionDx}
